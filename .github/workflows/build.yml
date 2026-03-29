@@ -137,6 +137,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'released' || github.event.action == 'prereleased')
+    permissions:
+      contents: write
+      id-token: write
 
     steps:
       - name: Download all artifacts
