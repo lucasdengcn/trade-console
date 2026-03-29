@@ -83,9 +83,10 @@ jobs:
       - name: Build binary (Windows)
         if: matrix.goos == 'windows'
         run: |
-          $env:GOOS="${{ matrix.goos }}"; $env:GOARCH="${{ matrix.goarch }}"; \
-          go build -ldflags="-s -w -X main.version=${{ env.VERSION }}" \
-            -o ${{ matrix.artifact_name }} \
+          $env:GOOS="${{ matrix.goos }}"
+          $env:GOARCH="${{ matrix.goarch }}"
+          go build -ldflags="-s -w -X main.version=${{ env.VERSION }}" `
+            -o ${{ matrix.artifact_name }} `
             cmd/cli/main.go
         working-directory: trade-manager
         shell: pwsh
