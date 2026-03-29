@@ -1,0 +1,153 @@
+name: Cross-Platform Build
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "trade-manager/**"
+      - ".github/workflows/**"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "trade-manager/**"
+      - ".github/workflows/**"
+  release:
+    types: [published]
+
+env:
+  PROJECT_NAME: trade-manager
+  BINARY_NAME: trade-cli
+  VERSION: ${{ github.ref_name }}
+
+jobs:
+  # Build for multiple platforms
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            artifact_name: ${{ env.BINARY_NAME }}-linux-amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            artifact_name: ${{ env.BINARY_NAME }}-linux-arm64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            artifact_name: ${{ env.BINARY_NAME }}-windows-amd64.exe
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            artifact_name: ${{ env.BINARY_NAME }}-darwin-amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            artifact_name: ${{ env.BINARY_NAME }}-darwin-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          cache: true
+
+      - name: Verify Go version
+        run: |
+          echo "Go version:"
+          go version
+
+      - name: Navigate to project directory
+        run: cd trade-manager
+        working-directory: trade-manager
+
+      - name: Download dependencies
+        run: go mod download
+        working-directory: trade-manager
+
+      - name: Verify dependencies
+        run: go mod verify
+        working-directory: trade-manager
+
+      - name: Run tests
+        run: go test -v ./...
+        working-directory: trade-manager
+
+      - name: Build binary
+        run: |
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+            -ldflags="-s -w -X main.version=${{ env.VERSION }}" \
+            -o ${{ matrix.artifact_name }} \
+            cmd/cli/main.go
+        working-directory: trade-manager
+
+      - name: Show binary info
+        run: |
+          echo "Binary information:"
+          file ${{ matrix.artifact_name }}
+          echo "Binary size:"
+          ls -lh ${{ matrix.artifact_name }}
+        working-directory: trade-manager
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: trade-manager/${{ matrix.artifact_name }}
+          retention-days: 30
+
+  # Create release with all binaries
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: List downloaded artifacts
+        run: ls -la
+
+      - name: Create checksums
+        run: |
+          find . -name "trade-cli-*" -type f -exec sha256sum {} \; > checksums.txt
+          echo "Checksums created:"
+          cat checksums.txt
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            trade-cli-linux-amd64/trade-cli-linux-amd64
+            trade-cli-linux-arm64/trade-cli-linux-arm64
+            trade-cli-windows-amd64.exe/trade-cli-windows-amd64.exe
+            trade-cli-darwin-amd64/trade-cli-darwin-amd64
+            trade-cli-darwin-arm64/trade-cli-darwin-arm64
+            checksums.txt
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            Cross-platform build of Trade Manager ${{ github.ref_name }}
+
+            ## Supported Platforms
+            - Linux (amd64, arm64)
+            - Windows (amd64)
+            - macOS (Intel, Apple Silicon)
+
+            ## Usage
+            Download the binary for your platform and make it executable:
+
+            ```bash
+            chmod +x trade-cli-<platform>
+            ./trade-cli-<platform> --help
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
