@@ -1,0 +1,52 @@
+{
+  "server": {
+    "base_url": "http://127.0.0.1:8000",
+    "timeout": 30,
+    "api_token": ""
+  },
+  "runtime": {
+    "max_workers": 10,
+    "retry_count": 3,
+    "log_level": "info"
+  },
+  "logging": {
+    "level": "debug",
+    "file_path": "./logs/app.log",
+    "max_size": 500,
+    "max_backups": 5,
+    "max_age": 7,
+    "compress": false
+  },
+  "same_position": {
+    "source_account": {
+      "XyBusinAccount": "88060819",
+      "stockAccount": "0680048595",
+      "clientType": "1",
+      "enabled": true
+    },
+    "target_accounts": [
+      {
+        "XyBusinAccount": "88060820",
+        "stockAccount": "0680048596",
+        "clientType": "1",
+        "enabled": false
+      },
+      {
+        "XyBusinAccount": "88060821",
+        "stockAccount": "0680048597",
+        "clientType": "1",
+        "enabled": false
+      }
+    ],
+    "order_template": {
+      "amount": 1000,
+      "order_type": "1",
+      "direction": "1",
+      "valid_end_time_str": "2023-12-31",
+      "min_amount": 100,
+      "max_amount": 10000,
+      "concurrency": 5
+    }
+  },
+  "accounts": [] // 备用账户列表
+}
