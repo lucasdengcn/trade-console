@@ -105,13 +105,24 @@ jobs:
       #   working-directory: trade-manager
       #   shell: pwsh
 
-      - name: Show binary info
+      - name: Show binary info (Linux/macOS)
+        if: matrix.config.goos != 'windows'
         run: |
           echo "Binary information:"
-          file ${{ matrix.artifact_name }}
+          file "${{ matrix.artifact_name }}"
           echo "Binary size:"
-          ls -lh ${{ matrix.artifact_name }}
+          ls -lh "${{ matrix.artifact_name }}"
         working-directory: trade-manager
+
+      - name: Show binary info (Windows)
+        if: matrix.config.goos == 'windows'
+        run: |
+          echo "Binary information:"
+          Get-Item "${{ matrix.artifact_name }}" | Format-List
+          echo "File size:"
+          (Get-Item "${{ matrix.artifact_name }}").Length
+        working-directory: trade-manager
+        shell: pwsh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
