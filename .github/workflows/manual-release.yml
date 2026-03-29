@@ -1,0 +1,203 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., v1.0.0)"
+        required: true
+        type: string
+        default: "v1.0.0"
+      release_notes:
+        description: "Release notes (markdown supported)"
+        required: false
+        type: string
+        default: "Manual release created via GitHub Actions"
+      prerelease:
+        description: "Mark as prerelease"
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: "Create as draft release"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GO_VERSION: "1.21"
+  PROJECT_NAME: trade-manager
+  BINARY_NAME: trade-cli
+
+jobs:
+  # Build for all platforms
+  build:
+    name: Build (${{ matrix.config.name }})
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - name: Linux AMD64
+            os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            artifact: trade-cli-linux-amd64
+          - name: Linux ARM64
+            os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            artifact: trade-cli-linux-arm64
+          - name: Windows AMD64
+            os: windows-latest
+            goos: windows
+            goarch: amd64
+            artifact: trade-cli-windows-amd64.exe
+          - name: macOS Intel
+            os: macos-latest
+            goos: darwin
+            goarch: amd64
+            artifact: trade-cli-darwin-amd64
+          - name: macOS Apple Silicon
+            os: macos-latest
+            goos: darwin
+            goarch: arm64
+            artifact: trade-cli-darwin-arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+        working-directory: trade-manager
+
+      - name: Verify dependencies
+        run: go mod verify
+        working-directory: trade-manager
+
+      - name: Build binary (Linux/macOS)
+        if: matrix.config.goos != 'windows'
+        run: |
+          GOOS=${{ matrix.config.goos }} GOARCH=${{ matrix.config.goarch }} \
+          go build -ldflags="-s -w -X main.version=${{ github.event.inputs.version }}" \
+            -o ${{ matrix.config.artifact }} \
+            cmd/cli/main.go
+        working-directory: trade-manager
+
+      - name: Build binary (Windows)
+        if: matrix.config.goos == 'windows'
+        run: |
+          $env:GOOS = "${{ matrix.config.goos }}"
+          $env:GOARCH = "${{ matrix.config.goarch }}"
+          go build -ldflags="-s -w -X main.version=${{ github.event.inputs.version }}" -o "${{ matrix.config.artifact }}" cmd/cli/main.go
+        working-directory: trade-manager
+        shell: pwsh
+
+      # - name: Test binary (Linux/macOS)
+      #   if: matrix.config.goos != 'windows'
+      #   run: |
+      #     chmod +x ${{ matrix.config.artifact }}
+      #     ./${{ matrix.config.artifact }} --version
+      #   working-directory: trade-manager
+
+      # - name: Test binary (Windows)
+      #   if: matrix.config.goos == 'windows'
+      #   run: |
+      #     .\${{ matrix.config.artifact }} --version
+      #   working-directory: trade-manager
+      #   shell: pwsh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.config.artifact }}
+          path: trade-manager/${{ matrix.config.artifact }}
+          retention-days: 30
+
+  # Create release
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create checksums
+        run: |
+          find . -name "trade-cli-*" -type f -exec sha256sum {} \; > checksums.txt
+          echo "=== Checksums ==="
+          cat checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            trade-cli-linux-amd64/trade-cli-linux-amd64
+            trade-cli-linux-arm64/trade-cli-linux-arm64
+            trade-cli-windows-amd64.exe/trade-cli-windows-amd64.exe
+            trade-cli-darwin-amd64/trade-cli-darwin-amd64
+            trade-cli-darwin-arm64/trade-cli-darwin-arm64
+            checksums.txt
+          tag_name: ${{ github.event.inputs.version }}
+          name: ${{ github.event.inputs.version }}
+          body: |
+            # Trade Manager ${{ github.event.inputs.version }}
+
+            ${{ github.event.inputs.release_notes }}
+
+            ## 📦 Downloads
+
+            | Platform | Architecture | Download |
+            |----------|-------------|----------|
+            | Linux | AMD64 | [trade-cli-linux-amd64](trade-cli-linux-amd64) |
+            | Linux | ARM64 | [trade-cli-linux-arm64](trade-cli-linux-arm64) |
+            | Windows | AMD64 | [trade-cli-windows-amd64.exe](trade-cli-windows-amd64.exe) |
+            | macOS | Intel | [trade-cli-darwin-amd64](trade-cli-darwin-amd64) |
+            | macOS | Apple Silicon | [trade-cli-darwin-arm64](trade-cli-darwin-arm64) |
+
+            ## 🔍 Verification
+
+            Verify downloads using the checksums file:
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+
+            ## 🚀 Quick Start
+
+            ```bash
+            # Make executable (Linux/macOS)
+            chmod +x trade-cli-<platform>
+
+            # Show help
+            ./trade-cli-<platform> --help
+
+            # Initialize configuration
+            ./trade-cli-<platform> --init
+            ```
+
+            ## 📋 Build Information
+
+            - **Build Date**: ${{ github.event.inputs.version }}
+            - **Commit**: ${{ github.sha }}
+            - **Workflow**: ${{ github.workflow }}
+          draft: ${{ github.event.inputs.draft }}
+          prerelease: ${{ github.event.inputs.prerelease }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
