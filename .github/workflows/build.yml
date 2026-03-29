@@ -71,17 +71,38 @@ jobs:
         run: go mod verify
         working-directory: trade-manager
 
-      # - name: Run tests
-      #   run: go test -v ./...
-      #   working-directory: trade-manager
-
-      - name: Build binary
+      - name: Build binary (Linux/macOS)
+        if: matrix.goos != 'windows'
         run: |
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
           -ldflags="-s -w -X main.version=${{ env.VERSION }}" \
           -o ${{ matrix.artifact_name }} \
           cmd/cli/main.go
         working-directory: trade-manager
+
+      - name: Build binary (Windows)
+        if: matrix.goos == 'windows'
+        run: |
+          $env:GOOS="${{ matrix.goos }}"; $env:GOARCH="${{ matrix.goarch }}"; \
+          go build -ldflags="-s -w -X main.version=${{ env.VERSION }}" \
+            -o ${{ matrix.artifact_name }} \
+            cmd/cli/main.go
+        working-directory: trade-manager
+        shell: pwsh
+
+      - name: Test binary (Linux/macOS)
+        if: matrix.goos != 'windows'
+        run: |
+          chmod +x ${{ matrix.artifact_name }}
+          ./${{ matrix.artifact_name }} --version || ./${{ matrix.artifact_name }} --help
+        working-directory: trade-manager
+
+      - name: Test binary (Windows)
+        if: matrix.goos == 'windows'
+        run: |
+          .\${{ matrix.artifact_name }} --version || .\${{ matrix.artifact_name }} --help
+        working-directory: trade-manager
+        shell: pwsh
 
       - name: Show binary info
         run: |
