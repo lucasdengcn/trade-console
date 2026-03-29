@@ -23,11 +23,11 @@ type RestClient struct {
 func NewRestClient() *RestClient {
 	cfg := config.GetConfig()
 	return &RestClient{
-		baseURL: cfg.BaseURL,
+		baseURL: cfg.Server.BaseURL,
 		httpClient: &http.Client{
-			Timeout: time.Duration(cfg.Timeout) * time.Second,
+			Timeout: time.Duration(cfg.Server.Timeout) * time.Second,
 		},
-		apiToken: cfg.APIToken,
+		apiToken: cfg.Server.APIToken,
 	}
 }
 

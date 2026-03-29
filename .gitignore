@@ -50,8 +50,8 @@ tmp/
 temp/
 
 # Build artifacts from shell scripts
-cli
-cli.exe
+trade-cli.exe
+trade-cli
 
 # Mock server build artifacts
 mock_server/mock_server
