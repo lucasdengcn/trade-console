@@ -106,7 +106,7 @@ jobs:
       #   shell: pwsh
 
       - name: Show binary info (Linux/macOS)
-        if: matrix.config.goos != 'windows'
+        if: matrix.goos != 'windows'
         run: |
           echo "Binary information:"
           file "${{ matrix.artifact_name }}"
@@ -115,7 +115,7 @@ jobs:
         working-directory: trade-manager
 
       - name: Show binary info (Windows)
-        if: matrix.config.goos == 'windows'
+        if: matrix.goos == 'windows'
         run: |
           echo "Binary information:"
           Get-Item "${{ matrix.artifact_name }}" | Format-List
