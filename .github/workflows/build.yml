@@ -30,23 +30,23 @@ jobs:
           - os: ubuntu-latest
             goos: linux
             goarch: amd64
-            artifact_name: ${{ env.BINARY_NAME }}-linux-amd64
+            artifact_name: trade-cli-linux-amd64
           - os: ubuntu-latest
             goos: linux
             goarch: arm64
-            artifact_name: ${{ env.BINARY_NAME }}-linux-arm64
+            artifact_name: trade-cli-linux-arm64
           - os: windows-latest
             goos: windows
             goarch: amd64
-            artifact_name: ${{ env.BINARY_NAME }}-windows-amd64.exe
+            artifact_name: trade-cli-windows-amd64.exe
           - os: macos-latest
             goos: darwin
             goarch: amd64
-            artifact_name: ${{ env.BINARY_NAME }}-darwin-amd64
+            artifact_name: trade-cli-darwin-amd64
           - os: macos-latest
             goos: darwin
             goarch: arm64
-            artifact_name: ${{ env.BINARY_NAME }}-darwin-arm64
+            artifact_name: trade-cli-darwin-arm64
 
     steps:
       - name: Checkout code
