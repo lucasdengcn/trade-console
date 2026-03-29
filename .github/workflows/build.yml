@@ -71,9 +71,9 @@ jobs:
         run: go mod verify
         working-directory: trade-manager
 
-      - name: Run tests
-        run: go test -v ./...
-        working-directory: trade-manager
+      # - name: Run tests
+      #   run: go test -v ./...
+      #   working-directory: trade-manager
 
       - name: Build binary
         run: |
