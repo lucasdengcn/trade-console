@@ -63,29 +63,25 @@ jobs:
           echo "Go version:"
           go version
 
-      - name: Navigate to project directory
-        run: cd trade-manager
-        working-directory: trade-manager
-
       - name: Download dependencies
-        run: go mod download
-        working-directory: trade-manager
+      run: go mod download
+      working-directory: trade-manager
 
-      - name: Verify dependencies
-        run: go mod verify
-        working-directory: trade-manager
+    - name: Verify dependencies
+      run: go mod verify
+      working-directory: trade-manager
 
-      - name: Run tests
-        run: go test -v ./...
-        working-directory: trade-manager
+    - name: Run tests
+      run: go test -v ./...
+      working-directory: trade-manager
 
-      - name: Build binary
-        run: |
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
-            -ldflags="-s -w -X main.version=${{ env.VERSION }}" \
-            -o ${{ matrix.artifact_name }} \
-            cmd/cli/main.go
-        working-directory: trade-manager
+    - name: Build binary
+      run: |
+        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build \
+          -ldflags="-s -w -X main.version=${{ env.VERSION }}" \
+          -o ${{ matrix.artifact_name }} \
+          cmd/cli/main.go
+      working-directory: trade-manager
 
       - name: Show binary info
         run: |
