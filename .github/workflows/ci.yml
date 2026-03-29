@@ -180,8 +180,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/trade-manager:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/trade-manager:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -256,7 +256,7 @@ jobs:
 
             Also available as a Docker image:
             ```bash
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE }}:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/trade-manager:latest
             ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
