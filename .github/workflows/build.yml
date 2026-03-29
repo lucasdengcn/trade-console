@@ -12,7 +12,7 @@ on:
       - "trade-manager/**"
       - ".github/workflows/**"
   release:
-    types: [published]
+    types: [published, released, prereleased]
 
 env:
   PROJECT_NAME: trade-manager
@@ -136,22 +136,19 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'released' || github.event.action == 'prereleased')
 
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
 
-      - name: List downloaded artifacts
-        run: ls -la
-
       - name: Create checksums
         run: |
           find . -name "trade-cli-*" -type f -exec sha256sum {} \; > checksums.txt
-          echo "Checksums created:"
+          echo "=== Checksums ==="
           cat checksums.txt
 
-      - name: Create release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
@@ -164,19 +161,38 @@ jobs:
           tag_name: ${{ github.ref }}
           name: Release ${{ github.ref_name }}
           body: |
-            Cross-platform build of Trade Manager ${{ github.ref_name }}
+            # Trade Manager ${{ github.ref_name }}
 
-            ## Supported Platforms
-            - Linux (amd64, arm64)
-            - Windows (amd64)
-            - macOS (Intel, Apple Silicon)
+            Cross-platform trading management tool for multi-account position synchronization.
 
-            ## Usage
-            Download the binary for your platform and make it executable:
+            ## 📦 Downloads
+
+            | Platform | Architecture | Download |
+            |----------|-------------|----------|
+            | Linux | AMD64 | [trade-cli-linux-amd64](trade-cli-linux-amd64) |
+            | Linux | ARM64 | [trade-cli-linux-arm64](trade-cli-linux-arm64) |
+            | Windows | AMD64 | [trade-cli-windows-amd64.exe](trade-cli-windows-amd64.exe) |
+            | macOS | Intel | [trade-cli-darwin-amd64](trade-cli-darwin-amd64) |
+            | macOS | Apple Silicon | [trade-cli-darwin-arm64](trade-cli-darwin-arm64) |
+
+            ## 🔍 Verification
+
+            Verify downloads using the checksums file:
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+
+            ## 🚀 Quick Start
 
             ```bash
+            # Make executable (Linux/macOS)
             chmod +x trade-cli-<platform>
+
+            # Show help
             ./trade-cli-<platform> --help
+
+            # Initialize configuration
+            ./trade-cli-<platform> --init
             ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
