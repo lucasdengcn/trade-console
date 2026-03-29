@@ -36,12 +36,12 @@ func startMockServer(port int) {
 // TestQueryPositions 测试持仓查询
 func TestQueryPositions(t *testing.T) {
 	// 设置测试配置
-	cfg := &config.Config{
-		Server: config.ServerConfig{
-			BaseURL: "http://localhost:8081",
-			Timeout: 10,
-		},
-	}
+	// cfg := &config.Config{
+	// 	Server: config.ServerConfig{
+	// 		BaseURL: "http://localhost:8081",
+	// 		Timeout: 10,
+	// 	},
+	// }
 	
 	// 创建交易管理器
 	mgr := manager.NewTradeManager()
