@@ -250,6 +250,42 @@ func (m *TradeManager) finalizeResult(result *models.SamePositionResult) {
 	result.Duration = result.EndTime.Sub(result.StartTime)
 }
 
+// BatchOrder 批量下单
+func (m *TradeManager) BatchOrder(ctx context.Context, orders []models.OrderRequest) []models.OrderResponse {
+	m.logger.Info("开始批量下单，订单数量: %d", len(orders))
+	
+	if len(orders) == 0 {
+		m.logger.Warn("批量下单: 订单列表为空")
+		return []models.OrderResponse{}
+	}
+	
+	results, err := m.batchPlaceOrders(ctx, orders, m.maxWorkers)
+	if err != nil {
+		m.logger.Error("批量下单失败: %v", err)
+		// 返回错误结果
+		errorResults := make([]models.OrderResponse, len(orders))
+		for i, order := range orders {
+			errorResults[i] = models.OrderResponse{
+				Success:   false,
+				Account:   order.XYAccount,
+				StockCode: order.StockCode,
+				Error:     err.Error(),
+			}
+		}
+		return errorResults
+	}
+	
+	successCount := 0
+	for _, result := range results {
+		if result.Success {
+			successCount++
+		}
+	}
+	
+	m.logger.Info("批量下单完成: 成功 %d/%d", successCount, len(orders))
+	return results
+}
+
 // GetPositionSummary 获取持仓汇总
 func (m *TradeManager) GetPositionSummary(accounts []models.AccountInfo) (map[string]interface{}, error) {
 	m.logger.Info("开始获取 %d 个账户的持仓汇总", len(accounts))
